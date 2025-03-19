@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.join(current_dir, "app")
@@ -20,6 +21,28 @@ from lt_app.config import CHANNELS, SAMPLE_RATE
 from lt_app.transcriber import transcribe_audio
 import lt_app.config as config
 
+CUSTOM_SPEAKER_LABEL = "Caller" 
+full_transcription = []
+async def store_transcription_callback(transcript, source, custom_label="Recruiter"):
+    """Store transcription in memory and write to file in real-time with a customizable speaker label."""
+    global full_transcription
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  
+    speaker = "Me" if source == "mic" else custom_label  # 🔥 Use the custom label
+
+    formatted_text = f"[{timestamp}] {speaker}: {transcript}"
+    print(f"{speaker}: {transcript}")
+    # ✅ Append to full_transcription list
+    full_transcription.append(formatted_text)
+
+    # ✅ Write to file immediately
+    with open("transcript.txt", "a", encoding="utf-8") as f:
+        f.write(formatted_text + "\n")
+
+    # ✅ Optionally print or log it
+    
+async def custom_callback(transcript, source):
+    """Pass the custom label to the main callback."""
+    await store_transcription_callback(transcript, source, custom_label=CUSTOM_SPEAKER_LABEL)
 
 
 
@@ -53,17 +76,6 @@ def cleanup():
             listener.stop()
     except Exception as e:
         print(f"⚠️ Cleanup error: {e}")
-
-    # ✅ Print Full Transcript
-    print("\n📜 FULL INTERVIEW TRANSCRIPT:")
-    for line in config.full_transcription:
-        print(line)
-
-    # ✅ Save to file
-    with open("transcript.txt", "w", encoding="utf-8") as f:
-        f.write("\n".join(config.full_transcription))
-
-    print("\n✅ Transcript saved to transcript.txt")
     print("✅ Cleanup complete. Goodbye!")
 
 # ✅ Handle Ctrl+C (KeyboardInterrupt)
@@ -74,9 +86,6 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)  # Register Ctrl+C handler
 
 
-
-print("🎤 Hold [SPACE] to record, release to transcribe. Press [ESC] to exit.")
-print("🔴 Press [CTRL+C] to exit safely.")
 
 def run_keyboard_listener():
     """Run the keyboard listener in a separate thread so it doesn't block asyncio."""
@@ -130,13 +139,13 @@ async def main():
         cleanup()
         exit(1)
 
-    print("🎤 Press [SPACE] to start/pause transcription. Press [ESC] to exit.")
+    print("🎤 Press [SPACE] to start/pause transcription. ")
     
     try:
         # 🔥 Ensure transcribe_audio is actually started
         print("🚀 Starting transcription loop...")
         loop = asyncio.get_event_loop()
-        loop.create_task(transcribe_audio())
+        loop.create_task(transcribe_audio(custom_callback))
         print("✅ Transcription task should now be running!")
 
         keyboard_thread = threading.Thread(target=run_keyboard_listener, daemon=True)

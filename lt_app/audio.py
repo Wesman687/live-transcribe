@@ -31,13 +31,11 @@ def speech_detector(audio, source):
             if not config.mic_speaking or (current_time - config.last_mic_detected_time > NOISE_DURATION_THRESHOLD):
                 config.mic_speaking = True
                 config.last_mic_audio_time = current_time
-                print(f"🎙️ Mic Speech detected! (Volume: {audio})")
             config.last_mic_detected_time = current_time  # 🔹 Update last speech detection time
         else:
             if not config.system_speaking or (current_time - config.last_system_detected_time > NOISE_DURATION_THRESHOLD):
                 config.system_speaking = True
                 config.last_system_audio_time = current_time
-                print(f"🔊 System Speech detected! (Volume: {audio})")
             config.last_system_detected_time = current_time  # 🔹 Update last speech detection time
 
 def check_pause(source):
@@ -46,7 +44,6 @@ def check_pause(source):
     last_audio_time = config.last_mic_audio_time if source == "mic" else config.last_system_audio_time
     speaking = config.mic_speaking if source == "mic" else config.system_speaking
     if speaking and (current_time - last_audio_time > PAUSE_THRESHOLD):
-        print("🔇 Silence detected. Waiting for new speech...")
         if source == "mic":
             config.mic_speaking = False
         else:
@@ -58,7 +55,6 @@ def mic_callback(indata, frames, _, status):
     if config.RECORDING:
         max_amplitude = np.max(np.abs(indata))
         if max_amplitude > MIN_VOLUME_THRESHOLD:  # Ignore background noise
-            print("send to speech")
             config.mic_buffer.append(indata.copy())
             config.last_mic_audio_time = time.time()
             speech_detector(max_amplitude, 'mic')

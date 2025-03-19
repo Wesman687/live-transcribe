@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "live-transcribe"
+version = "0.1.0"
+authors = [
+    { name = "Paul Miracle", email = "Wesman687@gmail.com" }
+]
+description = "A real-time live transcription tool using Whisper AI"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "faster-whisper",
+    "numpy",
+    "pynput",
+    "sounddevice",
+    "asyncio",
+    "pyyaml",
+]
+
+[project.scripts]
+live-transcribe = "lt_app.transcriber:main"
