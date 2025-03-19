@@ -1,0 +1,7 @@
+faster-whisper
+ollama
+sounddevice
+numpy
+pynput
+asyncio
+torchaudio  

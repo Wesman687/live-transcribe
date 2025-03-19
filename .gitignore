@@ -1,0 +1,10 @@
+.venv/*
+lt_app/__pycache__/*
+lt_app/*.pyc
+lt_app/*.pyo
+lt_app/*.pyd
+transcript.txt
+live_transcribe.egg-info/*
+dist/*
+build/*
+.vscode/*
