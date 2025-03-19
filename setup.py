@@ -11,7 +11,7 @@ setup(
     long_description=long_description,  # ✅ Ensuring UTF-8 encoding
     long_description_content_type="text/markdown",
     url="https://github.com/wesman687/live-transcribe",  # Update with your repo
-    packages=find_packages(),  # Automatically finds `lt_app`
+    packages=find_packages(include=["lt_app", "lt_app.*"]),
     include_package_data=True,
     install_requires=[
         "faster-whisper",  # Whisper AI
