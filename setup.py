@@ -19,9 +19,7 @@ setup(
         "pynput",
         "sounddevice",
         "asyncio",
-        "ollama"
         "pyyaml",
-        "torchaudio"
         "setuptools",
     ],
     extras_require={
