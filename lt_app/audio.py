@@ -20,7 +20,7 @@ def toggle_recording():
     else:
         print("🛑 Recording paused.")
         
-def speech_detector(audio, source):
+def speech_detector(audio, source, speaking_callback=None):
     """Detect if speech starts or stops based on loudness threshold with continuous tracking."""
     current_time = time.time()
     if current_time - config.start_time < IGNORE_FIRST_SECONDS:
@@ -31,14 +31,18 @@ def speech_detector(audio, source):
             if not config.mic_speaking or (current_time - config.last_mic_detected_time > NOISE_DURATION_THRESHOLD):
                 config.mic_speaking = True
                 config.last_mic_audio_time = current_time
+                if speaking_callback:
+                    speaking_callback(source, True)
             config.last_mic_detected_time = current_time  # 🔹 Update last speech detection time
         else:
             if not config.system_speaking or (current_time - config.last_system_detected_time > NOISE_DURATION_THRESHOLD):
                 config.system_speaking = True
                 config.last_system_audio_time = current_time
+                if speaking_callback:
+                    speaking_callback(source, True)
             config.last_system_detected_time = current_time  # 🔹 Update last speech detection time
 
-def check_pause(source):
+def check_pause(source, speaking_callback=None):
     """Check if the audio source has been silent for too long."""
     current_time = time.time()
     last_audio_time = config.last_mic_audio_time if source == "mic" else config.last_system_audio_time
@@ -48,24 +52,26 @@ def check_pause(source):
             config.mic_speaking = False
         else:
             config.system_speaking = False
+        if speaking_callback:
+            speaking_callback(source, False)
 
 
-def mic_callback(indata, frames, _, status):
+def mic_callback(indata, frames, _, status, speaking_callback=None):
     """Capture microphone audio when recording is enabled, ignoring very low volume."""
     if config.RECORDING:
         max_amplitude = np.max(np.abs(indata))
         if max_amplitude > MIN_VOLUME_THRESHOLD:  # Ignore background noise
             config.mic_buffer.append(indata.copy())
             config.last_mic_audio_time = time.time()
-            speech_detector(max_amplitude, 'mic')
-        check_pause("mic")
+            speech_detector(max_amplitude, 'mic', speaking_callback)
+        check_pause("mic", speaking_callback)
         
-def system_callback(indata, frames, _, status):
+def system_callback(indata, frames, _, status, speaking_callback=None):
     """Capture system audio when recording is enabled, ignoring very low volume."""
     if config.RECORDING:
         max_amplitude = np.max(np.abs(indata))
         if max_amplitude > MIN_VOLUME_THRESHOLD:  # Ignore background noise
             config.system_buffer.append(indata.copy())
             config.last_system_audio_time = time.time()
-            speech_detector(max_amplitude, 'system')
-        check_pause("system")
+            speech_detector(max_amplitude, 'system', speaking_callback)
+        check_pause("system", speaking_callback)

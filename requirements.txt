@@ -4,6 +4,6 @@ sounddevice
 numpy
 pynput
 asyncio
-torchaudio  
+torch
 
 #CUDA Users will need to install torchaudio manually pip install torchaudio -f https://download.pytorch.org/whl/cu118.html

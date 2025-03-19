@@ -73,7 +73,8 @@ def process_transcription(source, buffer):
         transcript = " ".join(segment.text for segment in segments).strip()
         if not is_meaningful_text(transcript):
             return None  # ✅ Return nothing to discard the junk
-        transcript = fix_transcription_with_ai(transcript)
+        if config.FIX_TRANSCRIPTION:
+            transcript = fix_transcription_with_ai(transcript)
         return transcript
 
     except Exception as e:

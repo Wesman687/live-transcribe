@@ -1,4 +1,6 @@
 from setuptools import setup, find_packages
+with open("README.md", "r", encoding="utf-8") as f:
+    long_description = f.read()
 
 setup(
     name="live-transcribe",  # Package name for pip install
@@ -6,7 +8,7 @@ setup(
     author="Paul Miracle",
     author_email="Wesman687@gmail.com",
     description="A real-time live transcription tool using Whisper AI",
-    long_description=open("README.md").read(),
+    long_description=long_description,  # ✅ Ensuring UTF-8 encoding
     long_description_content_type="text/markdown",
     url="https://github.com/wesman687/live-transcribe",  # Update with your repo
     packages=find_packages(),  # Automatically finds `lt_app`

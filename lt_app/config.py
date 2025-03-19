@@ -1,6 +1,8 @@
 import time
 import torch
 # ✅ Check if CUDA is available
+
+
 CUDA_AVAILABLE = torch.cuda.is_available()
 
 if not CUDA_AVAILABLE:
@@ -24,7 +26,7 @@ MODEL_SIZE = "large-v3"  # Change this based on your system capabilities
 # -----------------------------------
 # - "cuda" → Use GPU (best for NVIDIA GPUs with CUDA support)
 # - "cpu"  → Use CPU only (for slower PCs or non-GPU devices)
-DEVICE = "cuda"  # Change to "cpu" if you don't have a GPU
+DEVICE = "cuda" if CUDA_AVAILABLE else "cpu"  # Change to "cpu" if you don't have a GPU
 
 # 🔽 COMPUTE TYPE (Precision Optimization) 🔽
 # -------------------------------------------
@@ -38,18 +40,16 @@ SAMPLE_RATE = 16000
 
 MAX_PAUSE_THRESHOLD = 2
 
-SPEECH_THRESHOLD = 1400  # 🔥 Increase to ignore background noise
-MIN_VOLUME_THRESHOLD = 1400  # 🔥 Ignore very quiet sounds
+SPEECH_THRESHOLD = 1800  # 🔥 Increase to ignore background noise
+MIN_VOLUME_THRESHOLD = 1800  # 🔥 Ignore very quiet sounds
 NOISE_DURATION_THRESHOLD = 1  # 🔥 Speech must last 0.7s to be detected
 IGNORE_FIRST_SECONDS = 1.5  # 🔥 Ignore small noises right after unpausing
 
-# ✅ Device Configuration (Double-check indexes with `sd.query_devices()`)
-MIC_DEVICE = 12  # CHANGE THIS TO YOUR MIC ID
-SYSTEM_DEVICE = 34  # CHANGE THIS TO YOUR SYSTEM AUDIO ID
 
  # 🔥 Maximum pause threshold
 PAUSE_THRESHOLD = 1.5  # 🔥 If no speech detected for 3s, consider it a break
 JUNK_RESPONSES = {"uh", "uhh", "uh huh", "hmm", "hmmm", "okay", "ok", "right", "yeah", "yep", "yup"}
+FIX_TRANSCRIPTION = True
 
 WHITELIST_WORDS = [
         "TypeScript", "JavaScript", "Python", "Redux", "React", "Next.js",

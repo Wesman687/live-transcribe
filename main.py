@@ -44,6 +44,10 @@ async def custom_callback(transcript, source):
     """Pass the custom label to the main callback."""
     await store_transcription_callback(transcript, source, custom_label=CUSTOM_SPEAKER_LABEL)
 
+def speaking_state_callback(source, is_speaking):
+    """Handle the speaking state changes."""
+    state = "Speaking" if is_speaking else "Silent"
+    print(f"🔔 {source.capitalize()} is now {state}")
 
 
 def on_press(key):
@@ -103,7 +107,7 @@ async def main():
             mic_stream = sd.InputStream(
                 samplerate=SAMPLE_RATE,
                 channels=CHANNELS,
-                callback=mic_callback,
+                callback=lambda *args: mic_callback(*args, speaking_callback=speaking_state_callback),
                 dtype=np.int16,
                 device=1
             )
@@ -118,7 +122,7 @@ async def main():
             system_stream = sd.InputStream(
                 samplerate=SAMPLE_RATE,
                 channels=CHANNELS,
-                callback=system_callback,
+                callback=lambda *args: system_callback(*args, speaking_callback=speaking_state_callback),
                 dtype=np.int16,
                 device=3
             )
