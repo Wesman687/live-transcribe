@@ -23,7 +23,7 @@ import lt_app.config as config
 
 CUSTOM_SPEAKER_LABEL = "Caller" 
 full_transcription = []
-async def store_transcription_callback(transcript, source, custom_label="Recruiter"):
+async def store_transcription_callback(transcript, source):
     """Store transcription in memory and write to file in real-time with a customizable speaker label."""
     global full_transcription
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  
@@ -42,7 +42,7 @@ async def store_transcription_callback(transcript, source, custom_label="Recruit
     
 async def custom_callback(transcript, source):
     """Pass the custom label to the main callback."""
-    await store_transcription_callback(transcript, source, custom_label=CUSTOM_SPEAKER_LABEL)
+    await store_transcription_callback(transcript, source)
 
 def speaking_state_callback(source, is_speaking):
     """Handle the speaking state changes."""

@@ -47,6 +47,7 @@ python main.py
 👉 **Capture both microphone and/or system audio streams**  
 👉 **Transcript Callback to handle transcription events**  
 👉 **Speaking State Callback to detect when a speaker is talking**  
+👉 **Digital Streams for Twilio, VOIP, or pre-recorded Audio. Plug and Play**
 
 ---
 
@@ -92,13 +93,18 @@ toggle_recording()  # Start or stop recording
 ### **🔹 Handling Audio Streams**
 ```python
 import sounddevice as sd
-from lt_app.audio import mic_callback, system_callback
+from lt_app.audio import mic_callback, system_callback, digital_callback
 
 mic_stream = sd.InputStream(samplerate=16000, channels=1, callback=mic_callback, dtype="int16", device=1)
 system_stream = sd.InputStream(samplerate=16000, channels=1, callback=system_callback, dtype="int16", device=3)
 
+** Digital Stream for Plug and play for Twilio, VOIP, or pre-recorded Audio **
+digital_stream(audio_data, callback)
+
+
 mic_stream.start()
 system_stream.start()
+digital_stream.start()
 ```
 
 ### **🔹 Callback Example for Transcriptions**

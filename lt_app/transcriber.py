@@ -8,6 +8,7 @@ from .ai_processing import fix_transcription_with_ai
 from .config import MAX_PAUSE_THRESHOLD
 from .utils import is_meaningful_text, process_final_sentence
 import lt_app.config as config
+transcription_running = False
 
 
 
@@ -17,6 +18,10 @@ whisper_model = WhisperModel(config.MODEL_SIZE, device=config.DEVICE, compute_ty
 
 async def transcribe_audio(callback=None):
     """Continuously transcribe audio and detect sentence boundaries."""
+    global transcription_running
+    if transcription_running or callback is None:
+        return  # ✅ Prevent multiple loops
+    transcription_running = True
     try:
         while True:
             if not config.RECORDING:
@@ -41,6 +46,11 @@ async def transcribe_audio(callback=None):
                 check_time = current_time - last_audio_time
                 if check_time >= MAX_PAUSE_THRESHOLD:  # Ensure enough pause
                     tasks.append(handle_transcription("system", config.system_buffer, callback))
+            if config.digital_buffer:
+                last_audio_time = config.last_digital_audio_time
+                check_time = current_time - last_audio_time
+                if check_time >= MAX_PAUSE_THRESHOLD:  # Ensure enough pause
+                    tasks.append(handle_transcription("digital", config.digital_buffer, callback))
 
             # ✅ Run both transcriptions **at the same time**
             if tasks:
@@ -65,8 +75,10 @@ def process_transcription(source, buffer):
         audio_data = audio_data / np.max(np.abs(audio_data))
         if source == "mic":
             config.last_transcription_mic = ""
-        else:
+        elif source == "system":
             config.last_transcription_system = ""
+        elif source == "digital":
+            config.last_transcription_digital = ""
 
         # 🔥 Transcribe with Whisper
         segments, _ = whisper_model.transcribe(audio_data)
@@ -86,7 +98,12 @@ async def handle_transcription(source, buffer, callback=None):
     
     transcript = process_transcription(source, buffer)    
     if not transcript:
-        last_transcript = config.last_transcription_mic if source == "mic" else config.last_transcription_system
+        if source == "mic":
+            last_transcript = config.last_transcription_mic
+        elif source == "system":
+            last_transcript = config.last_transcription_system
+        elif source == "digital":
+            last_transcript = config.last_transcription_digital
                 
         # If there's no last transcript, there's nothing to process, so return
         if not last_transcript:
@@ -96,11 +113,15 @@ async def handle_transcription(source, buffer, callback=None):
         transcript = f"{config.last_transcription_mic} {transcript}".strip() if config.last_transcription_mic else transcript
         config.last_transcription_mic = transcript
         config.last_transcription_mic_time = time.time()
-    else:
+    elif source == "system":
         transcript = f"{config.last_transcription_system} {transcript}".strip() if config.last_transcription_system else transcript
         config.last_transcription_system = transcript
         config.last_transcription_system_time = time.time()
+    elif source == "digital":
+        transcript = f"{config.last_transcription_digital} {transcript}".strip
+        config.last_transcription_digital_time = time.time()
+        config.last_transcription_digital = transcript
 
-    await process_final_sentence(transcript, source == "mic", callback)
+    await process_final_sentence(transcript, source, callback)
         
         
