@@ -8,3 +8,5 @@ live_transcribe.egg-info/*
 dist/*
 build/*
 .vscode/*
+models/*
+models/turn-detector/
