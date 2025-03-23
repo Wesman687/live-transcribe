@@ -4,24 +4,19 @@ import asyncio
 import time
 from faster_whisper import WhisperModel
 
-from .ai_processing import fix_transcription_with_ai
-from .config import MAX_PAUSE_THRESHOLD
+from .ai_processing import fix_transcription_with_ai, process_candidate_response, process_recruiter_response
+from .config import MAX_PAUSE_THRESHOLD, MIN_PAUSE_THRESHOLD
 from .utils import is_meaningful_text, process_final_sentence
 import lt_app.config as config
-transcription_running = False
 
 
 
-# ✅ Initialize the Whisper Model with optimized settings
-whisper_model = WhisperModel(config.MODEL_SIZE, device=config.DEVICE, compute_type=config.COMPUTE_TYPE)
+# ✅ Whisper Model Initialization
+whisper_model = WhisperModel("medium", device="cuda", compute_type="float16")
 
 
 async def transcribe_audio(callback=None):
     """Continuously transcribe audio and detect sentence boundaries."""
-    global transcription_running
-    if transcription_running or callback is None:
-        return  # ✅ Prevent multiple loops
-    transcription_running = True
     try:
         while True:
             if not config.RECORDING:
@@ -37,25 +32,31 @@ async def transcribe_audio(callback=None):
             if config.mic_buffer:
                 last_audio_time = config.last_mic_audio_time
                 check_time = current_time - last_audio_time
-                if check_time >= MAX_PAUSE_THRESHOLD:  # Ensure enough pause
-                    tasks.append(handle_transcription("mic", config.mic_buffer, callback))
+                if check_time >= MIN_PAUSE_THRESHOLD:  # Ensure enough pause
+                    tasks.append(handle_transcription("mic", config.mic_buffer, check_time, callback))
 
             # ✅ Handle System Buffer if it exists
             if config.system_buffer:
                 last_audio_time = config.last_system_audio_time
                 check_time = current_time - last_audio_time
-                if check_time >= MAX_PAUSE_THRESHOLD:  # Ensure enough pause
-                    tasks.append(handle_transcription("system", config.system_buffer, callback))
-            if config.digital_buffer:
-                last_audio_time = config.last_digital_audio_time
-                check_time = current_time - last_audio_time
-                if check_time >= MAX_PAUSE_THRESHOLD:  # Ensure enough pause
-                    tasks.append(handle_transcription("digital", config.digital_buffer, callback))
+                if check_time >= MIN_PAUSE_THRESHOLD:  # Ensure enough pause
+                    tasks.append(handle_transcription("system", config.system_buffer, check_time, callback))
 
             # ✅ Run both transcriptions **at the same time**
             if tasks:
                 await asyncio.gather(*tasks)
                 
+            if config.last_transcription_mic_time:
+                time_since_last_mic_transcription = current_time - config.last_transcription_mic_time
+                if time_since_last_mic_transcription >= MAX_PAUSE_THRESHOLD and config.last_transcription_mic:
+                    print(f"⏳ Mic: MAX_PAUSE_THRESHOLD reached ({MAX_PAUSE_THRESHOLD}s). Finalizing last transcript.")
+                    process_final_sentence(config.last_transcription_mic, True, callback)
+            if config.last_transcription_system_time:
+                time_since_last_system_transcription = current_time - config.last_transcription_system_time
+                if time_since_last_system_transcription >= MAX_PAUSE_THRESHOLD and config.last_transcription_system:
+                    print(f"⏳ System: MAX_PAUSE_THRESHOLD reached ({MAX_PAUSE_THRESHOLD}s). Finalizing last transcript.")
+                    process_final_sentence(config.last_transcription_system, False, callback)
+
     except Exception as e:
         print(f"❌ Transcription loop error: {e}")
 
@@ -75,53 +76,58 @@ def process_transcription(source, buffer):
         audio_data = audio_data / np.max(np.abs(audio_data))
         if source == "mic":
             config.last_transcription_mic = ""
-        elif source == "system":
+        else:
             config.last_transcription_system = ""
-        elif source == "digital":
-            config.last_transcription_digital = ""
 
         # 🔥 Transcribe with Whisper
         segments, _ = whisper_model.transcribe(audio_data)
         transcript = " ".join(segment.text for segment in segments).strip()
         if not is_meaningful_text(transcript):
             return None  # ✅ Return nothing to discard the junk
-        if config.FIX_TRANSCRIPTION:
-            transcript = fix_transcription_with_ai(transcript)
+        transcript = fix_transcription_with_ai(transcript)
         return transcript
 
     except Exception as e:
         print(f"❌ Transcription error ({source}): {e}")
         return None
 
-async def handle_transcription(source, buffer, callback=None):
+async def handle_transcription(source, buffer, check_time, callback=None):
     """Process transcription for mic or system audio independently."""
     
-    transcript = process_transcription(source, buffer)    
+    transcript = process_transcription(source, buffer)
     if not transcript:
-        if source == "mic":
-            last_transcript = config.last_transcription_mic
-        elif source == "system":
-            last_transcript = config.last_transcription_system
-        elif source == "digital":
-            last_transcript = config.last_transcription_digital
+        last_transcript = config.last_transcription_mic if source == "mic" else config.last_transcription_system
                 
         # If there's no last transcript, there's nothing to process, so return
         if not last_transcript:
             return
                 
+        # ✅ If MAX_PAUSE_THRESHOLD is exceeded, forcefully process the last known transcription
+        
+                
+    # ✅ Combine transcript with previous transcription before sending
     if source == "mic":
         transcript = f"{config.last_transcription_mic} {transcript}".strip() if config.last_transcription_mic else transcript
         config.last_transcription_mic = transcript
         config.last_transcription_mic_time = time.time()
-    elif source == "system":
+    else:
         transcript = f"{config.last_transcription_system} {transcript}".strip() if config.last_transcription_system else transcript
         config.last_transcription_system = transcript
         config.last_transcription_system_time = time.time()
-    elif source == "digital":
-        transcript = f"{config.last_transcription_digital} {transcript}".strip
-        config.last_transcription_digital_time = time.time()
-        config.last_transcription_digital = transcript
 
-    await process_final_sentence(transcript, source, callback)
+    print(f"📝 {'Me' if source == 'mic' else 'Caller'}: {transcript}")
+
+    processed = None
+
+    if source == "mic": 
+        processed = await process_candidate_response(transcript) 
+    else:
+        processed = await process_recruiter_response(transcript)   
+                
+    if not processed:
+        print(f"⚠️ AI didn't confirm {source} response as finished. Waiting for more audio...")
+        
+    if processed:
+        await process_final_sentence(transcript, source == "mic", callback)
         
         

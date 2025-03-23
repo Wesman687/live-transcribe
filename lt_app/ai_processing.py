@@ -51,12 +51,7 @@ def fix_transcription_with_ai(text):
     - **Only correct actual misheard words. Do not rephrase the sentence.**
 
     **Example Fixes:**
-    - "I use Redux to handle date management" → "I use Redux to handle state management."
-    - "The time complexity is one o'clock" → "The time complexity is O(n)."
-    - "Great bit for your honey" → "Great fit for your company."
-    - **❌ INCORRECT:** "I use TypeScript" → "I use Django" (❌ WRONG)
-    - **❌ INCORRECT:** "Your company" → "Your career path" (❌ WRONG)
-    
+    {config.EXAMPLE_FIXES}
     **Original Transcription:**  
     "{text}"
 
