@@ -1,8 +1,14 @@
 faster-whisper
-sounddevice
 numpy
+sounddevice
 pynput
-asyncio
+pyyaml
+onnxruntime
+transformers
+huggingface_hub
+scipy
+aiofiles
 
 
-#CUDA Users will need to install torchaudio manually pip install torchaudio -f https://download.pytorch.org/whl/cu118.html
+# Optional: For GPU support, install torch + torchaudio manually
+# pip install torch torchaudio -f https://download.pytorch.org/whl/cu118.html

@@ -2,6 +2,8 @@ import sys
 import os
 import time
 
+import ollama
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.join(current_dir, "app")
 
@@ -21,13 +23,12 @@ from lt_app.config import CHANNELS, SAMPLE_RATE
 from lt_app.transcriber import transcribe_audio
 import lt_app.config as config
 
-CUSTOM_SPEAKER_LABEL = "Caller" 
 full_transcription = []
 async def store_transcription_callback(transcript, source):
     """Store transcription in memory and write to file in real-time with a customizable speaker label."""
     global full_transcription
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  
-    speaker = "Me" if source == "mic" else custom_label  # 🔥 Use the custom label
+    speaker = "Me" if source == "mic" else source  # 🔥 Use the custom label
 
     formatted_text = f"[{timestamp}] {speaker}: {transcript}"
     print(f"{speaker}: {transcript}")
@@ -40,9 +41,32 @@ async def store_transcription_callback(transcript, source):
 
     # ✅ Optionally print or log it
     
-async def custom_callback(transcript, source):
-    """Pass the custom label to the main callback."""
-    await store_transcription_callback(transcript, source)
+async def custom_callback(transcript, source, chat_history):
+    """Run local AI response using Mistral."""
+    if not transcript or not isinstance(transcript, str):
+        print("⚠️ Empty or invalid transcript in callback. Skipping AI call.")
+        return None
+    await store_transcription_callback(transcript, source)  # Store the transcription
+    system_prompt = {
+            "role": "system",
+            "content": (
+                "You are Tammy, a friendly church receptionist AI. Greet warmly, answer clearly, and use natural spoken language. Keep responses short and personal."
+            ),
+        }
+
+        # 🧱 Build chat with system prompt + user messages
+    full_chat = [system_prompt] + chat_history
+    try:
+        response = ollama.chat(model="mistral:7b-instruct", messages=full_chat)
+        ai_response = response["message"]["content"].strip()
+        print(f"🤖 Mistral response: {ai_response}")
+    except Exception as e:
+        print(f"⚠️ Mistral failed: {e}")
+        ai_response = "I'm sorry, something went wrong. Could you please repeat that?"
+
+    print(f"🤖 AI: {ai_response}")
+    await store_transcription_callback(ai_response, "assistant")  # Store AI response
+    return ai_response  # returned for optional use in handler
 
 def speaking_state_callback(source, is_speaking):
     """Handle the speaking state changes."""

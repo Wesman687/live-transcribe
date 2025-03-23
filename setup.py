@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="live-transcribe",  # Package name for pip install
-    version="0.1.0",  # Start with 0.1.0
+    version="0.3.0",  # Start with 0.1.0
     author="Paul Miracle",
     author_email="Wesman687@gmail.com",
     description="A real-time live transcription tool using Whisper AI",
@@ -14,13 +14,16 @@ setup(
     packages=find_packages(include=["lt_app", "lt_app.*"]),
     include_package_data=True,
     install_requires=[
-        "faster-whisper",  # Whisper AI
+        "faster-whisper",          # Whisper AI
         "numpy",
-        "pynput",
-        "sounddevice",
-        "asyncio",
-        "pyyaml",
-        "setuptools",
+        "sounddevice",             # Mic/System audio input
+        "pynput",                  # Optional: for hotkey listening
+        "pyyaml",                  # Optional: for config serialization
+        "onnxruntime",            # For ONNX EOU model inference
+        "transformers",           # For tokenizer used by EOU model
+        "huggingface_hub",        # For model download
+        "scipy",                  # For softmax/probabilities
+        "aiofiles",               # Async I/O handling
     ],
     extras_require={
         "cuda": ["torchaudio @ https://download.pytorch.org/whl/cu118/torchaudio-2.1.0%2Bcu118-cp310-cp310-linux_x86_64.whl"],

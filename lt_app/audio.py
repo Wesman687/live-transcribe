@@ -21,6 +21,12 @@ def toggle_recording():
         config.mic_speaking = False  # ✅ Reset speaking state when resuming
         config.system_speaking = False
         config.start_time = time.time()
+        config.mic_chat_history = []
+        config.system_chat_history = []
+        config.digital_chat_history = []
+        config.mic_pending_transcript = ""
+        config.system_pending_transcript = ""
+        config.digital_pending_transcript = ""
         time.sleep(2)
     else:
         print("🛑 Recording paused.")
@@ -122,7 +128,7 @@ async def digital_stream(audio_data, speaking_callback=None):
             # 🔹 Compute Mean Volume
             mean_volume = np.mean(np.abs(audio_float))
             # 🔹 Ignore background noise based on volume threshold
-            if mean_volume > .05:
+            if mean_volume > config.MAX_DIGITAL_VOLUME_THRESHOLD:
                 config.digital_buffer.append(audio_float.copy())  # Store audio in buffer
                 config.last_digital_audio_time = time.time()
 
