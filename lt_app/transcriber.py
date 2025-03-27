@@ -49,9 +49,6 @@ async def transcribe_audio(callback=None):
                 if check_time >= MAX_PAUSE_THRESHOLD:  # Ensure enough pause
                     tasks.append(handle_transcription("digital", config.digital_buffer, callback))
             if not config.mic_speaking and config.last_mic_audio_time and time.time() - config.last_mic_audio_time >= config.MAX_SILENCE_TIMEOUT and config.mic_pending_transcript.strip():
-                print(f"[DEBUG] Time since mic audio: {time.time() - config.last_mic_audio_time:.2f}s")
-                print(f"[DEBUG] Mic speaking: {config.mic_speaking}")
-                print("⏰ Mic audio timeout reached — forcing transcription")
                 await process_final_sentence("mic", config.mic_pending_transcript, callback)
                 config.mic_pending_transcript = ""
 
@@ -119,6 +116,7 @@ async def process_transcription(source, buffer):
         if not isinstance(pending_transcript, str):
             print("⚠️ Pending transcript is not a string, skipping.")
             return None
+        
         if not is_meaningful_text(pending_transcript):
             return None  # ✅ Return nothing to discard the junk
         eou_prob = None
